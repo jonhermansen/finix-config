@@ -1,0 +1,9 @@
+keys:
+  - &aaron age1ua00da5zyxupsgx5sram7hzmexygf94njzg2r7762ce0mhf3lc2q9v23w9
+  - &framework age1c4ql77nwdc5pcuyucyptkj63dga9wv59qdm3tw684ty0qwaf5p9qcnsjrs
+creation_rules:
+  - path_regex: ^secrets.yaml$
+    key_groups:
+      - age:
+        - *aaron
+        - *framework

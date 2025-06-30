@@ -1,0 +1,160 @@
+diff --git a/src/service.c b/src/service.c
+index 023b9bc1..5003ec9a 100644
+--- a/src/service.c
++++ b/src/service.c
+@@ -1564,7 +1564,7 @@ int service_register(int type, char *cfg, struct rlimit rlimit[], char *file)
+ 		}
+ 	}
+ 
+-	cmd = strtok_r(line, " \t", &args);
++	cmd = strtok_quote(line, " \t", &args);
+ 	if (!cmd) {
+ 	incomplete:
+ 		errx(1, "Incomplete service '%s', cannot register", cfg);
+@@ -1634,8 +1634,19 @@ int service_register(int type, char *cfg, struct rlimit rlimit[], char *file)
+ 		else if (MATCH_CMD(cmd, "env:", arg))
+ 			env = arg;
+ 		/* catch both cgroup: and cgroup. handled in parse_cgroup() */
+-		else if (MATCH_CMD(cmd, "cgroup", arg))
++		else if (MATCH_CMD(cmd, "cgroup", arg)) {
+ 			cgroup = arg;
++			warn("MATCH_CMD(%s, cgroup)", cgroup);
++
++			/* Remove single quotes from cgroup string */
++			char *src, *dst;
++			for (src = dst = cgroup; *src; src++) {
++				if (*src != '\'')
++					*dst++ = *src;
++			}
++			*dst = '\0';
++			warn("...and now: %s", cgroup);
++		}
+ 		else if (MATCH_CMD(cmd, "conflict:", arg))
+ 			conflict = arg;
+ 		else if (MATCH_CMD(cmd, "if:", arg))
+@@ -1644,7 +1655,7 @@ int service_register(int type, char *cfg, struct rlimit rlimit[], char *file)
+ 			break;
+ 
+ 		/* Check if valid command follows... */
+-		cmd = strtok_r(NULL, " ", &args);
++		cmd = strtok_quote(NULL, " ", &args);
+ 		if (!cmd)
+ 			goto incomplete;
+ 	}
+@@ -1700,7 +1711,7 @@ int service_register(int type, char *cfg, struct rlimit rlimit[], char *file)
+ 			strlcat(line, tty.args[i], len);
+ 		}
+ 
+-		cmd = strtok_r(line, " \t", &args);
++		cmd = strtok_quote(line, " \t", &args);
+ 		if (!cmd)
+ 			return errno;
+ 
+diff --git a/src/util.c b/src/util.c
+index 4e8b0e4c..7c14a331 100644
+--- a/src/util.c
++++ b/src/util.c
+@@ -588,6 +588,89 @@ int fistmpfs(char *dir)
+ 	return 0;
+ }
+ 
++/**
++ * strtok_quote - Tokenize string with support for quoted arguments
++ * @str:     String to tokenize, only set for first call
++ * @delim:   Delimiter characters to split on
++ * @saveptr: Pointer to a char * variable to maintain state between calls
++ *
++ * This function is similar to strtok_r() but it handles quoted strings.
++ * Quoted strings are treated as a single token, and the quotes are removed.
++ * Both single and double quotes are supported.
++ *
++ * Returns: pointer to the next token or NULL if no more tokens
++ */
++char *strtok_quote(char *str, const char *delim, char **saveptr)
++{
++	char *token;
++	char *end;
++	char quote_char = 0;
++	int length;
++
++	if (!saveptr)
++		return NULL;
++
++	/* If str is NULL, continue from last position */
++	if (!str)
++		str = *saveptr;
++
++	/* Skip leading delimiters */
++	str += strspn(str, delim);
++
++	/* Empty string or end of string */
++	if (*str == '\0')
++		return NULL;
++
++	/* Remember start of token */
++	token = str;
++
++	/* Find the end of the token */
++	while (*str) {
++		/* Handle quotes */
++		if ((*str == '"' || *str == '\'') && !quote_char) {
++			/* Start of quoted section */
++			quote_char = *str;
++			str++;
++		} else if (*str == quote_char) {
++			/* End of quoted section */
++			quote_char = 0;
++			str++;
++		} else if (strchr(delim, *str) && !quote_char) {
++			/* Found delimiter outside of quotes */
++			break;
++		} else {
++			/* Normal character */
++			str++;
++		}
++	}
++
++	/* Mark end of token */
++	end = str;
++	
++	/* If not at end of string, zero-terminate and advance saveptr */
++	if (*str) {
++		*str = '\0';
++		*saveptr = str + 1;
++	} else {
++		/* End of string */
++		*saveptr = str;
++	}
++
++	/* For quoted tokens, remove the quotes */
++	if (*token == '"' || *token == '\'') {
++		quote_char = *token;
++		token++;  /* Skip opening quote */
++		
++		/* Find the closing quote */
++		length = strlen(token);
++		if (length > 0 && token[length - 1] == quote_char) {
++			token[length - 1] = '\0';  /* Remove closing quote */
++		}
++	}
++
++	return token;
++}
++
+ #ifdef HAVE_TERMIOS_H
+ /*
+  * Called by initctl, and by finit at boot and shutdown, to
+diff --git a/src/util.h b/src/util.h
+index 5162385d..1d5390d7 100644
+--- a/src/util.h
++++ b/src/util.h
+@@ -66,6 +66,9 @@ int   fngetint     (char *path, int *val);
+ 
+ int   suspend      (void);
+ 
++/* Tokenize string with support for quoted arguments - returns next token */
++char *strtok_quote (char *str, const char *delim, char **saveptr);
++
+ int   strtobytes   (char *arg);
+ char *sig2str      (int sig);
+ int   str2sig      (char *sig);
