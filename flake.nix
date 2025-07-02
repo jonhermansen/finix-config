@@ -2,14 +2,14 @@
   description = "my finix os config";
 
   inputs = {
-    finix.url = "github:aanderse/finix";
+    finix.url = "github:aanderse/finix?ref=main";
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { finix, nixpkgs, sops-nix, ... }:
+  outputs = { self, finix, nixpkgs, sops-nix, ... }:
     let
       inherit (nixpkgs) lib;
 
@@ -65,6 +65,7 @@
           hyprlock
           incus
           iwd
+          mariadb
           mdevd # required for synit... see comment above
           niri
           nix-daemon

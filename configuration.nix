@@ -23,18 +23,30 @@
 
   finit.runlevel = 3;
 
-  # WIP: add support to finit for cgroup settings which contain spaces in them
-  finit.package = pkgs.finit.overrideAttrs (_: {
-    patches = [
-      ./cgroup.patch
-    ];
-  });
-
   finit.services.nix-daemon.cgroup.settings = {
-    "cpu.max" = "'200000 100000'";
-    "cpu.weight" = 10;
+    "cpu.max" = "'800000 100000'";
+    "cpu.weight" = 80;
   };
 
+  services.mariadb.enable = true;
+  finit.services.mariadb = lib.mapAttrs (_: lib.mkForce) {
+    # command = "${pkgs.mariadb}/bin/mysqld --defaults-file=/etc/my.cnf";
+    notify = "systemd";
+    log = true;
+    nohup = true;
+  };
+  environment.etc."finit.d/mariadb.conf".text = lib.mkAfter ''
+
+    # ${config.environment.etc."my.cnf".source}
+  '';
+  services.mariadb.settings.mysqld = {
+    # syslog = true;
+    user = "mariadb";
+    datadir = "/var/lib/mariadb";
+    # basedir = toString pkgs.mariadb;
+
+    # table_cache = 1600;
+  };
 
   finit.tasks.charge-limit.command = "${lib.getExe pkgs.framework-tool} --charge-limit 80";
   finit.tasks.nftables.command = "${lib.getExe pkgs.nftables} -f /etc/nftables.rules";
@@ -59,6 +71,11 @@
     trusted-public-keys = [ "aanderse.cachix.org-1:IJprPrTexBBGauCxrGF9KizIQJUZCDwMT+R9OisqCPM=" ];
   };
   services.openssh.enable = true;
+  # TODO: finit reload triggers...
+  environment.etc."finit.d/sshd.conf".text = lib.mkAfter ''
+
+    # ${config.environment.etc."ssh/sshd_config".source}
+  '';
   services.sysklogd.enable = true;
   services.udev.enable = true;
   services.polkit.enable = true;
@@ -238,6 +255,7 @@
     pkgs.waybar
 
     pkgs.direnv
+    pkgs.dnsutils
     pkgs.git
     pkgs.htop
     pkgs.lnav
@@ -247,8 +265,9 @@
     pkgs.micro
     pkgs.nano
     pkgs.ncdu
-    pkgs.nixd
+    pkgs.nix-output-monitor
     pkgs.nix-top
+    pkgs.nixd
     pkgs.npins
     pkgs.sops
     pkgs.ssh-to-age
@@ -323,6 +342,7 @@
     (pkgs.kodi-wayland.withPackages (p: [ p.jellyfin ]))
   ];
 
+  hardware.console.keyMap = "us";
   hardware.graphics.enable = true;
   hardware.graphics.enable32Bit = true;
 }
