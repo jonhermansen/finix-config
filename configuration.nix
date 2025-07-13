@@ -1,10 +1,25 @@
 { config, pkgs, lib, ... }:
+let
+#   libinput' = (pkgs.libinput.override {
+#     udev = pkgs.libudev-zero;
+#   }).overrideAttrs (o: {
+#     mesonFlags = (o.mesonFlags or [ ]) ++ [
+#       "-Dlibwacom=false"
+#     ];
+#   });
+#
+#   niri' = pkgs.niri.override {
+#     withSystemd = false;
+#     libinput = libinput';
+#   };
+in
 {
   imports = [
     ./hardware-configuration.nix
     ./sops
     ./openresolv.nix
     ./pam.nix
+    ./system76-scheduler.nix
   ];
 
   # TODO: grub.sh doesn't read boot.kernelParams yet
@@ -22,31 +37,6 @@
   networking.hostName = "framework";
 
   finit.runlevel = 3;
-
-  finit.services.nix-daemon.cgroup.settings = {
-    "cpu.max" = "'800000 100000'";
-    "cpu.weight" = 80;
-  };
-
-  services.mariadb.enable = true;
-  finit.services.mariadb = lib.mapAttrs (_: lib.mkForce) {
-    # command = "${pkgs.mariadb}/bin/mysqld --defaults-file=/etc/my.cnf";
-    notify = "systemd";
-    log = true;
-    nohup = true;
-  };
-  environment.etc."finit.d/mariadb.conf".text = lib.mkAfter ''
-
-    # ${config.environment.etc."my.cnf".source}
-  '';
-  services.mariadb.settings.mysqld = {
-    # syslog = true;
-    user = "mariadb";
-    datadir = "/var/lib/mariadb";
-    # basedir = toString pkgs.mariadb;
-
-    # table_cache = 1600;
-  };
 
   finit.tasks.charge-limit.command = "${lib.getExe pkgs.framework-tool} --charge-limit 80";
   finit.tasks.nftables.command = "${lib.getExe pkgs.nftables} -f /etc/nftables.rules";
@@ -78,6 +68,31 @@
   '';
   services.sysklogd.enable = true;
   services.udev.enable = true;
+  services.mdevd.enable = false;
+  # none of these rules validate that the groups actually exist...
+  services.mdevd.hotplugRules = [
+    "null        root:root 666 @chmod 666 $MDEV"
+    "zero        root:root 666"
+    "full        root:root 666"
+    "random      root:root 444"
+    "urandom     root:root 444"
+    "hwrandom    root:root 444"
+    "grsec       root:root 660"
+    "kmem        root:root 640"
+    "mem         root:root 640"
+    "port        root:root 640"
+    "console     root:tty 600 @chmod 600 $MDEV"
+    "ptmx        root:tty 666"
+    "pty.*       root:tty 660"
+    "tty         root:tty 666"
+    "tty[0-9]*   root:tty 660"
+    "vcsa*[0-9]* root:tty 660"
+    "ttyS[0-9]*  root:dialout 660"
+    "card[0-9]   root:video 660 =dri/"
+    "dri/.*      root:video 660"
+    "SUBSYSTEM=input;.* root:input 660"
+    "SUBSYSTEM=sound;.*  root:audio 660"
+  ];
   services.polkit.enable = true;
   programs.openresolv.enable = true;
   programs.bash.enable = true;
@@ -90,12 +105,36 @@
   services.ddccontrol.enable = true;
   programs.regreet.enable = true;
   programs.niri.enable = true;
+  # programs.niri.package = niri';
   programs.hyprlock.enable = true;
   programs.hyprland.enable = true;
   programs.sway.enable = true;
   programs.gnome-keyring.enable = true;
   programs.seahorse.enable = true;
   programs.xwayland-satellite.enable = true;
+
+  services.system76-scheduler.enable = true;
+
+  # TODO: services.system76-scheduler.settings
+  environment.etc."system76-scheduler/config.kdl".text = ''
+    version "2.0"
+
+    process-scheduler enable=true {
+      refresh-rate 60
+      execsnoop true
+
+      assignments {
+        nix-daemon io=(best-effort)4 sched="batch" {
+          include cgroup="/system/nix-daemon"
+        }
+      }
+    }
+  '';
+
+  finit.services.nix-daemon.cgroup.settings = {
+    "cpu.max" = "800000 100000";
+    "cpu.weight" = 80;
+  };
 
   # misc
   services.fprintd.enable = true;
@@ -339,7 +378,7 @@
 
     pkgs.imv # TODO: set as default image viewer
 
-    (pkgs.kodi-wayland.withPackages (p: [ p.jellyfin ]))
+    (pkgs.kodi-wayland.withPackages (p: [ p.jellyfin p.jellycon ]))
   ];
 
   hardware.console.keyMap = "us";

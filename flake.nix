@@ -9,7 +9,7 @@
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, finix, nixpkgs, sops-nix, ... }:
+  outputs = { finix, nixpkgs, sops-nix, ... }:
     let
       inherit (nixpkgs) lib;
 
@@ -20,6 +20,24 @@
         overlays = [
           finix.overlays.default
           sops-nix.overlays.default
+
+#           (final: prev: {
+#             libgudev = prev.libgudev.overrideAttrs (_: {
+#               doCheck = false;
+#             });
+#
+#             libwacom = prev.libwacom.override {
+#               libgudev = final.libgudev;
+#             };
+#
+#             libinput = (prev.libinput.override {
+#               udev = final.libudev-zero;
+#             }).overrideAttrs (o: {
+#               mesonFlags = (o.mesonFlags or [ ]) ++ [
+#                 "-Dlibwacom=false"
+#               ];
+#             });
+#           })
 
           (final: prev: {
             # without-systemd
