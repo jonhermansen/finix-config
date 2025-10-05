@@ -26,13 +26,14 @@ in
 
     finit.services.system76-scheduler = {
       description = "manage process priorities and CFS scheduler latencies for improved responsiveness on the desktop";
-      command = "${cfg.package}/bin/system76-scheduler daemon";
+      command = "${lib.getExe cfg.package} daemon";
+      reload = "${lib.getExe cfg.package} daemon reload";
       conditions = [ "service/syslogd/ready" "service/dbus/ready" ];
-      nohup = true;
       log = true;
 
       # TODO: now we're hijacking `env` and no one else can use it...
       env = pkgs.writeText "system76-scheduler.env" (''
+        NO_COLOR=1
         PATH="${lib.makeBinPath [ pkgs.kmod pkgs.gnutar pkgs.xz ]}:$PATH"
       '' + lib.optionalString cfg.debug ''
         RUST_LOG=system76_scheduler=debug

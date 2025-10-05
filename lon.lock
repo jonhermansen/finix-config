@@ -1,0 +1,35 @@
+{
+  "version": "1",
+  "sources": {
+    "finix": {
+      "type": "GitHub",
+      "fetchType": "tarball",
+      "owner": "finix-community",
+      "repo": "finix",
+      "branch": "main",
+      "revision": "ad9d90f08038728b5b7804eefd828e585ea1f243",
+      "url": "https://github.com/finix-community/finix/archive/ad9d90f08038728b5b7804eefd828e585ea1f243.tar.gz",
+      "hash": "sha256-CenmI3op0RJ43vSpYyd/fnW6J3+xcZhKZql0Mwd5nKk="
+    },
+    "nixpkgs": {
+      "type": "GitHub",
+      "fetchType": "tarball",
+      "owner": "nixos",
+      "repo": "nixpkgs",
+      "branch": "nixos-unstable",
+      "revision": "b599843bad24621dcaa5ab60dac98f9b0eb1cabe",
+      "url": "https://github.com/nixos/nixpkgs/archive/b599843bad24621dcaa5ab60dac98f9b0eb1cabe.tar.gz",
+      "hash": "sha256-tLdkkC6XnsY9EOZW9TlpesTclELy8W7lL2ClL+nma8o="
+    },
+    "sops-nix": {
+      "type": "GitHub",
+      "fetchType": "tarball",
+      "owner": "Mic92",
+      "repo": "sops-nix",
+      "branch": "master",
+      "revision": "9fcfabe085281dd793589bdc770a2e577a3caa5d",
+      "url": "https://github.com/Mic92/sops-nix/archive/9fcfabe085281dd793589bdc770a2e577a3caa5d.tar.gz",
+      "hash": "sha256-f9QC2KKiNReZDG2yyKAtDZh0rSK2Xp1wkPzKbHeQVRU="
+    }
+  }
+}

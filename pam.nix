@@ -1,6 +1,8 @@
 # TODO: hoping for some resolution on this comment: https://github.com/NixOS/nixpkgs/pull/401751#issuecomment-2978503674
 { config, pkgs, lib, ... }:
 {
+  security.pam.debug = true;
+
   security.pam.services.sudo.text = lib.mkForce ''
     # Account management.
     account required pam_unix.so # unix (order 10900)
@@ -14,7 +16,7 @@
     password sufficient pam_unix.so nullok yescrypt # unix (order 10200)
 
     # Session management.
-    session required pam_env.so readenv=0 # env (order 10100)
+    session required pam_env.so conffile=/etc/security/pam_env.conf readenv=0 # env (order 10100)
     session required pam_unix.so # unix (order 10200)
   '';
 
@@ -31,7 +33,7 @@
     password sufficient pam_unix.so nullok yescrypt # unix (order 10200)
 
     # Session management.
-    session required pam_env.so readenv=0 # env (order 10100)
+    session required pam_env.so conffile=/etc/security/pam_env.conf readenv=0 # env (order 10100)
     session required pam_unix.so # unix (order 10200)
   '';
 
@@ -49,7 +51,7 @@
     password sufficient pam_unix.so nullok yescrypt # unix (order 10200)
 
     # Session management.
-    session required pam_env.so readenv=1 debug # env (order 10100)
+    session required pam_env.so debug conffile=/etc/security/pam_env.conf readenv=1 # env (order 10100)
     session required pam_unix.so # unix (order 10200)
     # https://github.com/coastalwhite/lemurs/issues/166
     # session optional pam_loginuid.so # loginuid (order 10300)
