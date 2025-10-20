@@ -92,9 +92,9 @@ in
     # RANDOM_DELAY = "10";
   };
   services.cronie.systab = [
-    "* * * * * aaron echo Hello World >> /home/aaron/cronout"
-    "* * * * * aaron hello -g 'foo bar' >> /home/aaron/cronout.extra"
-    # "* * * * * aaron ls -l >> /home/aaron/cronout"
+    "* * * * * user echo Hello World >> /home/user/cronout"
+    "* * * * * user hello -g 'foo bar' >> /home/user/cronout.extra"
+    # "* * * * * user ls -l >> /home/user/cronout"
   ];
 
   boot.limine.extraEntries = ''
@@ -211,6 +211,7 @@ in
   finit.tasks.nftables.command = "${lib.getExe pkgs.nftables} -f /etc/nftables.rules";
 
   finit.services.wifid = {
+    enable = false;
     command = pkgs.callPackage ./wifid/package.nix { };
     log = true;
   };
@@ -228,7 +229,7 @@ in
   services.nix-daemon.nrBuildUsers = 32;
   services.nix-daemon.settings = {
     # experimental-features = [ "flakes" "nix-command" ];
-    experimental-features = [ "nix-command" "pipe-operators" ];
+    experimental-features = [ "flakes" "nix-command" "pipe-operators" ];
     download-buffer-size = 524288000;
     fallback = true;
     log-lines = 25;
@@ -371,9 +372,9 @@ in
   # NOTE: https://wiki.alpinelinux.org/wiki/Polkit#Using_polkit_with_seatd
   services.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
-      // allow user "aaron" to utilize the fingerprint reader
+      // allow user "user" to utilize the fingerprint reader
       // not great for security but acceptible given this is a single user laptop... i guess
-      if (subject.user == "aaron" && action.id.startsWith("net.reactivated.fprint.device.")) {
+      if (subject.user == "user" && action.id.startsWith("net.reactivated.fprint.device.")) {
         return polkit.Result.YES;
       }
 
@@ -657,6 +658,8 @@ in
     pkgs.links2
     pkgs.mpv
     pkgs.nix-output-monitor
+    pkgs.pciutils
+    pkgs.usbutils
     pkgs.wmenu
     pkgs.xorg.xauth
     pkgs.xorg.xinit
@@ -667,6 +670,6 @@ in
   hardware.graphics.enable32Bit = true;
 
   # https://wiki.nixos.org/wiki/Accelerated_Video_Playback#Intel
-  hardware.graphics.extraPackages = [ pkgs.intel-media-driver ];
+  hardware.graphics.extraPackages = [ pkgs.vpl-gpu-rt pkgs.intel-media-driver ];
   hardware.graphics.extraPackages32 = [ pkgs.pkgsi686Linux.intel-media-driver ];
 }
