@@ -5,6 +5,7 @@
     "nvme"
     "usb_storage"
     "sd_mod"
+    "igc"
   ];
   boot.kernelModules = [
     # FIXME: causing virtualbox not to work
@@ -15,26 +16,16 @@
     "uhid"
   ];
 
-  fileSystems."/" = {
-    fsType = "zfs";
-    device = "tank/finix";
-  };
+  fileSystems."/" =
+    { device = "/dev/disk/by-label/nixos2";
+      fsType = "ext4";
+    };
 
-  fileSystems."/boot" = {
-    fsType = "vfat";
-    options = [ "fmask=0077" "dmask=0077" ];
-    device = "/dev/disk/by-uuid/35E7-B286";
-  };
-
-  fileSystems."/nix" = {
-    fsType = "zfs";
-    device = "tank/nix";
-  };
-
-  fileSystems."/home" = {
-    fsType = "zfs";
-    device = "tank/home";
-  };
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-label/boot2";
+      fsType = "vfat";
+      options = [ "fmask=0077" "dmask=0077" ];
+    };
 
   fileSystems."/tmp" = {
     fsType = "tmpfs";

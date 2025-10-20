@@ -49,13 +49,13 @@ os = pkgs.lib.evalModules {
 
                 echo
                 echo "menuentry \"finix - default\" {"
-                echo "  linux $storepath/kernel root=/dev/sda4 ro init=$storepath/init loglevel=1"
+                echo "  linux $storepath/kernel root=LABEL=nixos2 ro init=$storepath/init loglevel=1"
                 echo "  initrd $storepath/initrd"
                 echo "}"
 
                 echo
                 echo "menuentry \"finix - debug\" {"
-                echo "  linux $storepath/kernel root=/dev/sda4 ro init=$storepath/init -- finit.debug=true"
+                echo "  linux $storepath/kernel root=LABEL=nixos2 ro init=$storepath/init -- finit.debug=true"
                 echo "  initrd $storepath/initrd"
                 echo "}"
 
@@ -69,7 +69,7 @@ os = pkgs.lib.evalModules {
 
                   echo
                   echo "  menuentry \"finix generation $gen ${nixpkgs.shortRev} - $dt\" {"
-                  echo "    linux $storepath/kernel root=/dev/sda4 ro init=$storepath/init"
+                  echo "    linux $storepath/kernel root=LABEL=nixos2 ro init=$storepath/init"
                   echo "    initrd $storepath/initrd"
                   echo "  }"
                 done

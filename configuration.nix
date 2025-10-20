@@ -137,16 +137,16 @@ in
   services.uptime-kuma.enable = true;
 
   # TODO: options for nix remote builders
-  environment.etc."nix/machines".enable = true;
-  environment.etc."nix/machines".text = lib.concatMapStringsSep "\n" (v: "ssh://${v}.node x86_64-linux - 20 2 benchmark,big-parallel - -") [
-    "arche"
-    "callisto"
-    "europa"
-    "helike"
-    "herse"
-    "kore"
-    "metis"
-  ];
+#  environment.etc."nix/machines".enable = true;
+#  environment.etc."nix/machines".text = lib.concatMapStringsSep "\n" (v: "ssh://${v}.node x86_64-linux - 20 2 benchmark,big-parallel - -") [
+#    "arche"
+#    "callisto"
+#    "europa"
+#    "helike"
+#    "herse"
+#    "kore"
+#    "metis"
+#  ];
   finit.services.nix-daemon.env = pkgs.writeText "nix-daemon.env" ''
     PATH="${lib.makeBinPath [ config.services.nix-daemon.package pkgs.util-linux config.services.openssh.package ]}:$PATH"
     CURL_CA_BUNDLE=${config.security.pki.caBundle}
@@ -187,7 +187,7 @@ in
   #     HostName ${values."dev0-hetz/bastion"}
   # '';
 
-  networking.hostName = "framework";
+  networking.hostName = "desktop";
 
   finit.runlevel = 3;
   finit.package = pkgs.finit.overrideAttrs (o: {
@@ -302,7 +302,7 @@ in
 
   # TODO: create graphical desktop profiles
   services.rtkit.enable = true;
-  services.bluetooth.enable = true;
+  services.bluetooth.enable = false;
   services.seatd.enable = true;
   services.ddccontrol.enable = true;
   programs.regreet.enable = true;
@@ -317,14 +317,14 @@ in
     extraArgs = [ "-s" "-m" "last" ];
     environment = {
       XKB_DEFAULT_LAYOUT = "us";
-      XKB_DEFAULT_VARIANT = "dvorak";
+      #XKB_DEFAULT_VARIANT = "dvorak";
     };
   };
-  programs.niri.enable = true;
-  programs.niri.package = niri';
-  programs.hyprlock.enable = true;
-  programs.hyprland.enable = true;
-  programs.hyprland.package = hyprland';
+  #programs.niri.enable = true;
+  #programs.niri.package = niri';
+  #programs.hyprlock.enable = true;
+  #programs.hyprland.enable = true;
+  #programs.hyprland.package = hyprland';
   programs.sway.enable = true;
   programs.sway.package = sway';
   programs.labwc.enable = true;
@@ -420,7 +420,7 @@ in
   ];
 
   xdg.portal.portals = [
-    pkgs.xdg-desktop-portal-hyprland
+    #pkgs.xdg-desktop-portal-hyprland
     pkgs.xdg-desktop-portal-wlr
     pkgs.xdg-desktop-portal-gtk
   ];
@@ -457,11 +457,11 @@ in
 
   providers.privileges.rules = [
     { command = "/run/current-system/sw/bin/poweroff";
-      users = [ "aaron" ];
+      users = [ "user" ];
       requirePassword = false;
     }
     { command = "/run/current-system/sw/bin/reboot";
-      users = [ "aaron" ];
+      users = [ "user" ];
       requirePassword = false;
     }
   ];
@@ -492,7 +492,7 @@ in
   users.users.user = {
     isNormalUser = true;
     shell = pkgs.fish;
-    password = "password"; #config.sops.secrets."aaron/password".path;
+    #password = "password"; #config.sops.secrets."aaron/password".path;
     group = "users";
     home = "/home/user";
     createHome =  true;
@@ -641,10 +641,25 @@ in
 
     pkgs.imv # TODO: set as default image viewer
 
-    (kodi'.withPackages (p: [ p.jellyfin p.jellycon p.a4ksubtitles ]))
+    #(kodi'.withPackages (p: [ p.jellyfin p.jellycon p.a4ksubtitles ])) # JAH TODO: failed to build
 
     # TODO: add `programs.ssh.*` options
     pkgs.openssh
+
+    # JON WAS HERE
+    pkgs.browsh
+    pkgs.dhcpcd
+    pkgs.emacs-pgtk
+    pkgs.foot
+    pkgs.i3
+    pkgs.kitty
+    pkgs.librewolf
+    pkgs.links2
+    pkgs.mpv
+    pkgs.nix-output-monitor
+    pkgs.wmenu
+    pkgs.xorg.xauth
+    pkgs.xorg.xinit
   ];
 
   hardware.console.keyMap = "us";
