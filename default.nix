@@ -6,52 +6,50 @@ let
 
     config.allowUnfree = true;
     overlays = [
-      (import (<finix> + "/overlays/default.nix"))
+      (import <finix/overlays>)
+      (import <finix/overlays/modular-services.nix>)
 
       (final: prev: {
         inherit (import <sops-nix> { pkgs = final; }) sops-install-secrets;
       })
 
       (final: prev: {
-        # without-systemd
         hyprland = prev.hyprland.override { withSystemd = false; };
         niri = prev.niri.override { withSystemd = false; };
         # procps = prev.procps.override { withSystemd = false; };
         seatd = prev.seatd.override { systemdSupport = false; };
         swayidle = prev.swayidle.override { systemdSupport = false; };
-        waybar = prev.waybar.override { systemdSupport = false; };
         xdg-desktop-portal = prev.xdg-desktop-portal.override { enableSystemd = false; };
         xwayland-satellite = prev.xwayland-satellite.override { withSystemd = false; };
       })
     ];
   };
 
-  # modules = builtins.attrValues finix.nixosModules;
   modules = lib.attrValues {
-    inherit (import (<finix> + "/modules"))
+    inherit (import <finix/modules>)
       # required for evaluation
-      default # TODO: do we want to exclude finit when we build synit? and vice versa?
-      elogind
-      privileges
-      scheduler #
-      seatd
-
-      # required for runtime
+      default
       dbus
+      elogind
+      mdevd
+      privileges
+      scheduler
+      seatd
       tmpfiles
       udev
-      mdevd # required for synit... see comment above
 
-      # selected modules
       atd
       bash
       bluetooth
+      brightnessctl
       chronyd
       ddccontrol
+      dropbear
       fcron
       fish
       fprintd
       fstrim
+      fwupd
       getty
       gnome-keyring
       greetd
@@ -70,8 +68,11 @@ let
       rtkit
       seahorse
       sysklogd
+      system76-scheduler
       tzupdate
       upower
+      uptime-kuma
+      virtualbox
       xwayland-satellite
       zerotierone
       zfs
@@ -84,10 +85,11 @@ let
 
   os = lib.evalModules {
     specialArgs = {
-      inherit pkgs;
+      modulesPath = toString <nixpkgs/nixos/modules>;
     };
 
     modules = [
+      { nixpkgs.pkgs = pkgs; }
       ./configuration.nix
     ] ++ modules;
   };

@@ -16,9 +16,9 @@ let
     # this turns the string into an actual Nix path (for both absolute and
     # relative paths)
     if builtins.substring 0 1 replacement == "/" then
-      /. + replacement
+      replacement
     else
-      /. + builtins.getEnv "PWD" + "/${replacement}";
+      builtins.getEnv "PWD" + "/${replacement}";
 
   fetchSource =
     args@{ fetchType, ... }:

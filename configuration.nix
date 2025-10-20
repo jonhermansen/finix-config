@@ -1,63 +1,76 @@
 { config, pkgs, lib, ... }:
 let
-  libudev-zero' = pkgs.libudev-zero.overrideAttrs (_: {
-    src = pkgs.fetchFromGitHub {
-      owner = "illiliti";
-      repo = "libudev-zero";
-      rev = "bbeb7ad51c1edb7ab3cf63f30a21e9bb383b7994";
-      sha256 = "sha256-hQoLnKpT/cnGyUl56DnHjZ0nfenLPI9EvmOejqEPxfc=";
-    };
+  pipewire' = (pkgs.pipewire.override (lib.optionalAttrs config.services.mdevd.enable {
+    enableSystemd = false;
+    udev = pkgs.libudev-zero;
+  })).overrideAttrs (o: {
+    # https://gitlab.freedesktop.org/pipewire/pipewire/-/issues/2398#note_2967898
+    patches = o.patches or [ ] ++ [ ./pipewire.patch ];
   });
 
-  wlroots' = pkgs.wlroots_0_19.override {
+  wireplumber' = pkgs.wireplumber.override (lib.optionalAttrs config.services.mdevd.enable {
+    pipewire = pipewire';
+  });
+
+  aquamarine' = pkgs.aquamarine.override (lib.optionalAttrs config.services.mdevd.enable {
     libinput = libinput';
-  };
+    udev = pkgs.libudev-zero;
+  });
 
-  pipewire' = if config.services.udev.enable then
-    pkgs.pipewire
-  else
-    pkgs.callPackage ./pipewire.nix {
-      path = pkgs.path + "/pkgs/development/libraries/pipewire/";
-      enableSystemd = false;
-      udevSupport = false;
-    };
-
-  wireplumber' = if config.services.udev.enable then
-    pkgs.wireplumber
-  else
-    pkgs.wireplumber.override {
-      pipewire = pipewire';
-    };
-
-  pulseaudio' = pkgs.pulseaudio.override {
-    udevSupport = false;
-    useSystemd = false;
-  };
+  kodi' = pkgs.kodi-wayland.override (lib.optionalAttrs config.services.mdevd.enable {
+    udev = pkgs.libudev-zero;
+  });
 
   libinput' = (pkgs.libinput.override {
-    udev = libudev-zero';
+    udev = pkgs.libudev-zero;
   }).overrideAttrs (o: {
     mesonFlags = (o.mesonFlags or [ ]) ++ [
       "-Dlibwacom=false"
     ];
   });
 
-  niri' = if config.services.udev.enable then
-    pkgs.niri
-  else
-    pkgs.niri.override {
-      withSystemd = false;
-      libinput = libinput';
-      eudev = libudev-zero';
-    };
+  niri' = pkgs.niri.override (lib.optionalAttrs config.services.mdevd.enable {
+    eudev = pkgs.libudev-zero;
+    withSystemd = false;
+    libinput = libinput';
+  });
 
-  labwc' = if config.services.udev.enable then
-    pkgs.labwc
-  else
-    pkgs.labwc.override {
+  labwc' = pkgs.labwc.override (lib.optionalAttrs config.services.mdevd.enable {
+    libinput = libinput';
+    wlroots_0_19 = pkgs.wlroots_0_19.override {
       libinput = libinput';
-      wlroots_0_19 = wlroots';
     };
+  });
+
+  sway' = pkgs.sway.override (lib.optionalAttrs config.services.mdevd.enable {
+    sway-unwrapped = pkgs.sway-unwrapped.override {
+      systemdSupport = false;
+      libinput = libinput';
+
+      wlroots = pkgs.wlroots.override {
+        libinput = libinput';
+      };
+    };
+  });
+
+  hyprland' = pkgs.hyprland.override (lib.optionalAttrs config.services.mdevd.enable {
+    aquamarine = aquamarine';
+    libinput = libinput';
+    withSystemd = false;
+  });
+
+  waybar' = (pkgs.waybar.overrideAttrs (o: {
+    patches = o.patches or [ ] ++ lib.optionals config.services.mdevd.enable [
+      (pkgs.fetchpatch {
+        url = "https://github.com/Alexays/Waybar/commit/bef35e48fe8b38aa1cfb67bc25bf7ae42c2ffd4b.patch";
+        hash = "sha256-3pSQe4JfqLDIocHRXgngVcHd6aa6gmY5gIdIVphEgrw=";
+      })
+    ];
+  })).override (lib.optionalAttrs config.services.mdevd.enable {
+    systemdSupport = false;
+    udev = pkgs.libudev-zero;
+  });
+
 in
 {
   imports = [
@@ -65,14 +78,23 @@ in
     ./sops
     ./openresolv.nix
     ./pam.nix
-    ./system76-scheduler.nix
-    ./fwupd.nix
     ./test.nix
-    ./uptime-kuma.nix
-    ./dropbear.nix
 
     ./limine.nix
-    ./virtualbox.nix
+    ./cronie.nix
+  ];
+
+  services.cronie.enable = false;
+  services.cronie.settings = {
+    PATH = [ pkgs.hello ];
+    # MAILTO = "aaron@fosslib.net";
+    # MAILFROM = "root@framework";
+    # RANDOM_DELAY = "10";
+  };
+  services.cronie.systab = [
+    "* * * * * aaron echo Hello World >> /home/aaron/cronout"
+    "* * * * * aaron hello -g 'foo bar' >> /home/aaron/cronout.extra"
+    # "* * * * * aaron ls -l >> /home/aaron/cronout"
   ];
 
   boot.limine.extraEntries = ''
@@ -168,6 +190,22 @@ in
   networking.hostName = "framework";
 
   finit.runlevel = 3;
+  finit.package = pkgs.finit.overrideAttrs (o: {
+    configureFlags = [
+      "--sysconfdir=/etc"
+      "--localstatedir=/var"
+
+      # tweak default plugin list
+      "--enable-modules-load-plugin=yes"
+      "--enable-hotplug-plugin=no"
+
+      # minimal replacement for systemd notification library
+      "--with-libsystemd"
+
+      # monitor kernel events, like ac power status
+      "--with-keventd"
+    ];
+  });
 
   finit.tasks.charge-limit.command = "${lib.getExe pkgs.framework-tool} --charge-limit 80";
   finit.tasks.nftables.command = "${lib.getExe pkgs.nftables} -f /etc/nftables.rules";
@@ -177,20 +215,20 @@ in
     log = true;
   };
 
-  finit.services.dropbear.conditions = [ "usr/with-an-e" ];
 
   # TODO: create a base system profile
   services.atd.enable = true;
   services.chrony.enable = true;
   services.fcron.enable = true;
   services.dbus.enable = true;
-  services.fwupd.enable = false;
+  services.fwupd.enable = true;
   services.fwupd.debug = false;
   services.iwd.enable = true;
   services.nix-daemon.enable = true;
   services.nix-daemon.nrBuildUsers = 32;
   services.nix-daemon.settings = {
-    experimental-features = [ "flakes" "nix-command" ];
+    # experimental-features = [ "flakes" "nix-command" ];
+    experimental-features = [ "nix-command" "pipe-operators" ];
     download-buffer-size = 524288000;
     fallback = true;
     log-lines = 25;
@@ -204,68 +242,91 @@ in
   };
   services.openssh.enable = false;
   services.dropbear.enable = true;
-
-  # TODO: finit reload triggers...
-  environment.etc."finit.d/sshd.conf" = lib.mkIf config.services.openssh.enable {
-    text = lib.mkAfter ''
-
-      # ${config.environment.etc."ssh/sshd_config".source}
-    '';
-  };
+  finit.services.dropbear.conditions = [ "usr/with-an-e" ];
   services.sysklogd.enable = true;
-  services.udev.enable = lib.mkForce true;
-  services.mdevd.enable = ! config.services.udev.enable;
+  # services.udev.enable = true;
+  services.mdevd.enable = true;
+  services.mdevd.nlgroups = 4;
   services.mdevd.debug = true;
-  # none of these rules validate that the groups actually exist...
-  services.mdevd.hotplugRules = ''
-    .* 0:0 660 @${pkgs.finit}/libexec/finit/logit -s -t mdevd "event=$ACTION dev=$MDEV subsystem=$SUBSYSTEM path=$DEVPATH"
 
-    grsec       0:0 660
-    kmem        0:0 640
-    mem         0:0 640
-    port        0:0 640
-    console     0:${toString config.ids.gids.tty} 600 @chmod 600 $MDEV
-    tty         0:${toString config.ids.gids.tty} 666
-    card[0-9]   0:${toString config.ids.gids.video} 660 =dri/
+  # .* 0:0 660 @${pkgs.finit}/libexec/finit/logit -s -t mdevd "event=$ACTION dev=$MDEV subsystem=$SUBSYSTEM path=$DEVPATH devtype=$DEVTYPE modalias=$MODALIAS major=$MAJOR minor=$MINOR"
+  services.mdevd.hotplugRules = lib.mkMerge [
+    # TODO: shouldn't this just be included by default?
+    (lib.mkAfter ''
+      SUBSYSTEM=input;.* root:input 660
+      SUBSYSTEM=sound;.*  root:audio 660
+    '')
 
-    # alsa sound devices and audio stuff
-    pcm.*       root:audio 0660 =snd/
-    control.*   root:audio 0660 =snd/
-    midi.*      root:audio 0660 =snd/
-    seq         root:audio 0660 =snd/
-    timer       root:audio 0660 =snd/
+    ''
+      grsec       root:root 660
+      kmem        root:root 640
+      mem         root:root 640
+      port        root:root 640
+      console     root:tty 600 @chmod 600 $MDEV
+      card[0-9]   root:video 660 =dri/
 
-    adsp        root:audio 0660 >sound/
-    audio       root:audio 0660 >sound/
-    dsp         root:audio 0660 >sound/
-    mixer       root:audio 0660 >sound/
-    sequencer.* root:audio 0660 >sound/
+      # alsa sound devices and audio stuff
+      pcm.*       root:audio 0660 =snd/
+      control.*   root:audio 0660 =snd/
+      midi.*      root:audio 0660 =snd/
+      seq         root:audio 0660 =snd/
+      timer       root:audio 0660 =snd/
 
-    event[0-9]+ 0:${toString config.ids.gids.input} 660 =input/
-    mice        0:${toString config.ids.gids.input} 660 =input/
-    mouse[0-9]+ 0:${toString config.ids.gids.input} 660 =input/
+      adsp        root:audio 0660 >sound/
+      audio       root:audio 0660 >sound/
+      dsp         root:audio 0660 >sound/
+      mixer       root:audio 0660 >sound/
+      sequencer.* root:audio 0660 >sound/
 
-    SUBSYSTEM=input;.* 0:${toString config.ids.gids.input} 660
-    SUBSYSTEM=sound;.*  0:${toString config.ids.gids.audio} 660
-  '';
+      event[0-9]+ root:input 660 =input/
+      mice        root:input 660 =input/
+      mouse[0-9]+ root:input 660 =input/
+    ''
+  ];
   services.polkit.enable = true;
   programs.openresolv.enable = true;
   programs.bash.enable = true;
   programs.fish.enable = true;
 
   programs.virtualbox.enable = true;
+  #programs.virtualbox.package = pkgs.virtualbox.overrideAttrs (o: {
+  #  patches = o.patches ++ [ ./virtualbox.patch ];
+  #});
+  # https://forums.virtualbox.org/viewtopic.php?p=556540#p556540
+  environment.etc."modprobe.d/blacklist-kvm.conf".text = ''
+    # kernel 6.12 and later ship with kvm enabled by default, which breaks vbox
+    blacklist kvm
+    blacklist kvm_intel
+  '';
+  programs.brightnessctl.enable = true;
 
   # TODO: create graphical desktop profiles
   services.rtkit.enable = true;
   services.bluetooth.enable = true;
   services.seatd.enable = true;
   services.ddccontrol.enable = true;
-  programs.regreet.enable = config.services.udev.enable;
+  programs.regreet.enable = true;
+  programs.regreet.compositor = {
+    package = pkgs.cage.override {
+      wlroots_0_19 = pkgs.wlroots_0_19.override {
+        libinput = libinput';
+
+        enableXWayland = false;
+      };
+    };
+    extraArgs = [ "-s" "-m" "last" ];
+    environment = {
+      XKB_DEFAULT_LAYOUT = "us";
+      XKB_DEFAULT_VARIANT = "dvorak";
+    };
+  };
   programs.niri.enable = true;
   programs.niri.package = niri';
   programs.hyprlock.enable = true;
   programs.hyprland.enable = true;
+  programs.hyprland.package = hyprland';
   programs.sway.enable = true;
+  programs.sway.package = sway';
   programs.labwc.enable = true;
   programs.labwc.package = labwc';
   programs.gnome-keyring.enable = true;
@@ -273,10 +334,7 @@ in
   programs.xwayland-satellite.enable = true;
 
   services.system76-scheduler.enable = true;
-
-  # TODO: services.system76-scheduler.settings
-  # nix-daemon io=(best-effort)4 sched="batch" {
-  environment.etc."system76-scheduler/config.kdl".text = ''
+  services.system76-scheduler.configFile = pkgs.writeText "config.kdl" ''
     version "2.0"
 
     process-scheduler enable=true {
@@ -284,6 +342,7 @@ in
       execsnoop true
 
       assignments {
+        // nix-daemon io=(best-effort)4 sched="batch" {
         nix-daemon io=(idle)4 sched="idle" {
           include cgroup="/system/nix-daemon"
         }
@@ -409,8 +468,6 @@ in
 
   services.udev.packages = [
     config.services.udev.package
-
-    pkgs.brightnessctl
   ];
 
   hardware.firmware = with pkgs; [
@@ -441,7 +498,13 @@ in
     createHome =  true;
 
     extraGroups = [
-      config.services.seatd.group "audio" "incus-admin" "input" "video" "wheel" "vboxusers"
+      config.services.seatd.group
+      "audio"
+      "incus-admin"
+      "input"
+      "vboxusers"
+      "video"
+      "wheel"
     ];
   };
 
@@ -461,10 +524,11 @@ in
     pkgs.mako
     pkgs.musikcube
     pkgs.playerctl
+    pkgs.pwmenu
     pkgs.swaybg
     pkgs.swayidle
-    pkgs.walker
-    pkgs.waybar
+    pkgs.walker pkgs.fuzzel
+    waybar'
 
     pkgs.direnv
     pkgs.dnsutils
@@ -472,6 +536,7 @@ in
     pkgs.htop
     pkgs.lnav
     pkgs.jq
+    pkgs.lon
     pkgs.mailutils
     pkgs.man
     pkgs.micro
@@ -481,7 +546,6 @@ in
     pkgs.nix-output-monitor
     pkgs.nix-top
     pkgs.nixd
-    pkgs.npins
     pkgs.sops
     pkgs.ssh-to-age
     pkgs.tree
@@ -500,7 +564,7 @@ in
     pkgs.steam
     pkgs.xarchiver
 
-    pkgs.lite-xl
+    # pkgs.lite-xl # broken recently
     pkgs.marp-cli
     pkgs.tdf
     (pkgs.vscode-with-extensions.override {
@@ -530,7 +594,6 @@ in
     pkgs.slack
 
     pkgs.bluetui
-    pkgs.brightnessctl
     pkgs.framework-tool
     pkgs.impala
     pkgs.libnotify
@@ -578,7 +641,7 @@ in
 
     pkgs.imv # TODO: set as default image viewer
 
-    (pkgs.kodi-wayland.withPackages (p: [ p.jellyfin p.jellycon p.a4ksubtitles ]))
+    (kodi'.withPackages (p: [ p.jellyfin p.jellycon p.a4ksubtitles ]))
 
     # TODO: add `programs.ssh.*` options
     pkgs.openssh

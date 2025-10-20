@@ -7,7 +7,8 @@
     "sd_mod"
   ];
   boot.kernelModules = [
-    "kvm-intel"
+    # FIXME: causing virtualbox not to work
+    # "kvm-intel"
 
     # bluetooth keyboard didn't work without this
     # https://github.com/bluez/bluez/issues/531#issuecomment-1913058753

@@ -1,4 +1,6 @@
 let
+  inherit (pkgs) lib;
+
   sources = import ./lon.nix;
 
   pkgs = import sources.nixpkgs { };

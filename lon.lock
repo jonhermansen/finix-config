@@ -7,9 +7,9 @@
       "owner": "finix-community",
       "repo": "finix",
       "branch": "main",
-      "revision": "ad9d90f08038728b5b7804eefd828e585ea1f243",
-      "url": "https://github.com/finix-community/finix/archive/ad9d90f08038728b5b7804eefd828e585ea1f243.tar.gz",
-      "hash": "sha256-CenmI3op0RJ43vSpYyd/fnW6J3+xcZhKZql0Mwd5nKk="
+      "revision": "ce74d61685efd81aa27fbf6bef466bb6a3cb08b7",
+      "url": "https://github.com/finix-community/finix/archive/ce74d61685efd81aa27fbf6bef466bb6a3cb08b7.tar.gz",
+      "hash": "sha256-WZeVOa8x11z/+VjguZwZuyoyVXL+2QoI/8/cX4Kh2jM="
     },
     "nixpkgs": {
       "type": "GitHub",
@@ -17,9 +17,9 @@
       "owner": "nixos",
       "repo": "nixpkgs",
       "branch": "nixos-unstable",
-      "revision": "b599843bad24621dcaa5ab60dac98f9b0eb1cabe",
-      "url": "https://github.com/nixos/nixpkgs/archive/b599843bad24621dcaa5ab60dac98f9b0eb1cabe.tar.gz",
-      "hash": "sha256-tLdkkC6XnsY9EOZW9TlpesTclELy8W7lL2ClL+nma8o="
+      "revision": "544961dfcce86422ba200ed9a0b00dd4b1486ec5",
+      "url": "https://github.com/nixos/nixpkgs/archive/544961dfcce86422ba200ed9a0b00dd4b1486ec5.tar.gz",
+      "hash": "sha256-EVAqOteLBFmd7pKkb0+FIUyzTF61VKi7YmvP1tw4nEw="
     },
     "sops-nix": {
       "type": "GitHub",
@@ -27,9 +27,9 @@
       "owner": "Mic92",
       "repo": "sops-nix",
       "branch": "master",
-      "revision": "9fcfabe085281dd793589bdc770a2e577a3caa5d",
-      "url": "https://github.com/Mic92/sops-nix/archive/9fcfabe085281dd793589bdc770a2e577a3caa5d.tar.gz",
-      "hash": "sha256-f9QC2KKiNReZDG2yyKAtDZh0rSK2Xp1wkPzKbHeQVRU="
+      "revision": "6e5a38e08a2c31ae687504196a230ae00ea95133",
+      "url": "https://github.com/Mic92/sops-nix/archive/6e5a38e08a2c31ae687504196a230ae00ea95133.tar.gz",
+      "hash": "sha256-UvzKi02LMFP74csFfwLPAZ0mrE7k6EiYaKecplyX9Qk="
     }
   }
 }
