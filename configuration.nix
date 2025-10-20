@@ -75,10 +75,10 @@ in
 {
   imports = [
     ./hardware-configuration.nix
-    ./sops
+    #./sops
     ./openresolv.nix
     ./pam.nix
-    ./test.nix
+    #./test.nix
 
     ./limine.nix
     ./cronie.nix
@@ -152,11 +152,11 @@ in
     CURL_CA_BUNDLE=${config.security.pki.caBundle}
   '';
 
-  sops.validateSopsFiles = false;
-  sops.defaultSopsFile = "/home/aaron/framework/secrets.yaml";
-  sops.age.sshKeyPaths = [ "/var/lib/sshd/ssh_host_ed25519_key" ];
+  #sops.validateSopsFiles = false;
+  #sops.defaultSopsFile = "/home/aaron/framework/secrets.yaml";
+  #sops.age.sshKeyPaths = [ "/var/lib/sshd/ssh_host_ed25519_key" ];
 
-  sops.secrets."aaron/password".neededForUsers = true;
+  #sops.secrets."aaron/password".neededForUsers = true;
   # sops.secrets."dev0-hetz/bastion" = { };
 
 #   providers.generator.files = {
@@ -489,12 +489,12 @@ in
     pkgs.wireless-regdb
   ];
 
-  users.users.aaron = {
+  users.users.user = {
     isNormalUser = true;
     shell = pkgs.fish;
-    passwordFile = config.sops.secrets."aaron/password".path;
+    password = "password"; #config.sops.secrets."aaron/password".path;
     group = "users";
-    home = "/home/aaron";
+    home = "/home/user";
     createHome =  true;
 
     extraGroups = [
