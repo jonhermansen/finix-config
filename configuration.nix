@@ -207,7 +207,7 @@ in
     ];
   });
 
-  finit.tasks.charge-limit.command = "${lib.getExe pkgs.framework-tool} --charge-limit 80";
+  #finit.tasks.charge-limit.command = "${lib.getExe pkgs.framework-tool} --charge-limit 80";
   finit.tasks.nftables.command = "${lib.getExe pkgs.nftables} -f /etc/nftables.rules";
 
   finit.services.wifid = {
@@ -222,9 +222,9 @@ in
   services.chrony.enable = true;
   services.fcron.enable = true;
   services.dbus.enable = true;
-  services.fwupd.enable = true;
+  services.fwupd.enable = false;
   services.fwupd.debug = false;
-  services.iwd.enable = true;
+  services.iwd.enable = false;
   services.nix-daemon.enable = true;
   services.nix-daemon.nrBuildUsers = 32;
   services.nix-daemon.settings = {
@@ -246,50 +246,12 @@ in
   finit.services.dropbear.conditions = [ "usr/with-an-e" ];
   services.sysklogd.enable = true;
   services.udev.enable = true;
-  services.mdevd.enable = false;
-  services.mdevd.nlgroups = 4;
-  services.mdevd.debug = true;
-
-  # .* 0:0 660 @${pkgs.finit}/libexec/finit/logit -s -t mdevd "event=$ACTION dev=$MDEV subsystem=$SUBSYSTEM path=$DEVPATH devtype=$DEVTYPE modalias=$MODALIAS major=$MAJOR minor=$MINOR"
-  services.mdevd.hotplugRules = lib.mkMerge [
-    # TODO: shouldn't this just be included by default?
-    (lib.mkAfter ''
-      SUBSYSTEM=input;.* root:input 660
-      SUBSYSTEM=sound;.*  root:audio 660
-    '')
-
-    ''
-      grsec       root:root 660
-      kmem        root:root 640
-      mem         root:root 640
-      port        root:root 640
-      console     root:tty 600 @chmod 600 $MDEV
-      card[0-9]   root:video 660 =dri/
-
-      # alsa sound devices and audio stuff
-      pcm.*       root:audio 0660 =snd/
-      control.*   root:audio 0660 =snd/
-      midi.*      root:audio 0660 =snd/
-      seq         root:audio 0660 =snd/
-      timer       root:audio 0660 =snd/
-
-      adsp        root:audio 0660 >sound/
-      audio       root:audio 0660 >sound/
-      dsp         root:audio 0660 >sound/
-      mixer       root:audio 0660 >sound/
-      sequencer.* root:audio 0660 >sound/
-
-      event[0-9]+ root:input 660 =input/
-      mice        root:input 660 =input/
-      mouse[0-9]+ root:input 660 =input/
-    ''
-  ];
   services.polkit.enable = true;
   programs.openresolv.enable = true;
   programs.bash.enable = true;
   programs.fish.enable = true;
 
-  programs.virtualbox.enable = true;
+  programs.virtualbox.enable = false;
   #programs.virtualbox.package = pkgs.virtualbox.overrideAttrs (o: {
   #  patches = o.patches ++ [ ./virtualbox.patch ];
   #});
@@ -651,15 +613,22 @@ in
     pkgs.browsh
     pkgs.dhcpcd
     pkgs.emacs-pgtk
+    pkgs.file
     pkgs.foot
+    pkgs.glxinfo
+    pkgs.grim
     pkgs.i3
     pkgs.kitty
     pkgs.librewolf
     pkgs.links2
+    pkgs.mesa
+    pkgs.mesa_glu
     pkgs.mpv
     pkgs.nix-output-monitor
+    pkgs.pavucontrol
     pkgs.pciutils
     pkgs.usbutils
+    pkgs.vulkan-tools
     pkgs.wmenu
     pkgs.xorg.xauth
     pkgs.xorg.xinit
