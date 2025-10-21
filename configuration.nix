@@ -245,8 +245,8 @@ in
   services.dropbear.enable = true;
   finit.services.dropbear.conditions = [ "usr/with-an-e" ];
   services.sysklogd.enable = true;
-  # services.udev.enable = true;
-  services.mdevd.enable = true;
+  services.udev.enable = true;
+  services.mdevd.enable = false;
   services.mdevd.nlgroups = 4;
   services.mdevd.debug = true;
 
